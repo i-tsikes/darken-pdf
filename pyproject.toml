@@ -1,0 +1,23 @@
+[project]
+name = "python-utils"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Terry Sikes", email = "terry.l.sikes@gmail.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "numpy>=2.5.4",
+    "pdf2image>=1.17.0",
+    "pillow>=13.0.0",
+    "pytesseract>=0.3.13",
+    "reportlab>=5.1.0",
+]
+
+[project.scripts]
+python-utils = "python_utils:main"
+
+[build-system]
+requires = ["uv_build>=0.13.5,<0.14.0"]
+build-backend = "uv_build"
