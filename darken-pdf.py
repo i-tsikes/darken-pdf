@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pdf2image import convert_from_path
+from pdf2image.exceptions import PDFInfoNotInstalledError
 from PIL import Image, ImageEnhance
 import numpy as np
 import pytesseract
@@ -8,12 +9,48 @@ from reportlab.lib.utils import ImageReader
 import argparse
 import io
 import os
+import shutil
 import sys
+
+
+TESSERACT_CANDIDATES = (
+    "tesseract",
+    "/opt/homebrew/bin/tesseract",  # Apple Silicon Homebrew
+    "/usr/local/bin/tesseract",  # Intel Homebrew / Linux local
+    "/usr/bin/tesseract",
+)
+
+POPPLER_CANDIDATES = (
+    "pdftoppm",
+    "/opt/homebrew/bin/pdftoppm",
+    "/usr/local/bin/pdftoppm",
+    "/usr/bin/pdftoppm",
+)
+
+SYSTEM_DEPS_HELP = """\
+This script needs two system tools (not installed by uv):
+
+  • tesseract  — OCR engine used by pytesseract
+  • poppler    — PDF rasterizer used by pdf2image (pdftoppm)
+
+Install them, then re-run:
+
+  macOS (Homebrew):
+    brew install tesseract poppler
+
+  Ubuntu / Debian:
+    sudo apt-get install -y tesseract-ocr poppler-utils
+
+  Fedora:
+    sudo dnf install -y tesseract poppler-utils
+"""
 
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="Darken text in a PDF and add an invisible OCR text layer."
+        description="Darken text in a PDF and add an invisible OCR text layer.",
+        epilog=SYSTEM_DEPS_HELP,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
         "pdf",
@@ -51,6 +88,50 @@ def text_gray_level(darken_percent):
     return int(round(255 * (1 - percent / 100.0)))
 
 
+def find_executable(candidates):
+    for candidate in candidates:
+        if os.path.isabs(candidate):
+            if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+                return candidate
+        else:
+            found = shutil.which(candidate)
+            if found:
+                return found
+    return None
+
+
+def ensure_system_deps():
+    """Locate tesseract/poppler and configure pytesseract; exit with help if missing."""
+    tesseract = find_executable(TESSERACT_CANDIDATES)
+    pdftoppm = find_executable(POPPLER_CANDIDATES)
+
+    missing = []
+    if not tesseract:
+        missing.append("tesseract")
+    if not pdftoppm:
+        missing.append("poppler (pdftoppm)")
+
+    if missing:
+        print(
+            f"error: missing system dependenc{'y' if len(missing) == 1 else 'ies'}: "
+            + ", ".join(missing),
+            file=sys.stderr,
+        )
+        print(file=sys.stderr)
+        print(SYSTEM_DEPS_HELP, file=sys.stderr)
+        sys.exit(1)
+
+    pytesseract.pytesseract.tesseract_cmd = tesseract
+    # pdf2image finds poppler via PATH; if only a non-PATH install exists, put its
+    # directory first so convert_from_path can call pdftoppm.
+    poppler_dir = os.path.dirname(pdftoppm)
+    path_dirs = os.environ.get("PATH", "").split(os.pathsep)
+    if poppler_dir and poppler_dir not in path_dirs:
+        os.environ["PATH"] = poppler_dir + os.pathsep + os.environ.get("PATH", "")
+
+    return tesseract, pdftoppm
+
+
 def main():
     args = parse_args()
     pdf_path = args.pdf
@@ -66,8 +147,16 @@ def main():
         print(f"error: PDF not found: {pdf_path}", file=sys.stderr)
         sys.exit(1)
 
+    ensure_system_deps()
+
     print("Converting pages...")
-    images = convert_from_path(pdf_path, dpi=150)
+    try:
+        images = convert_from_path(pdf_path, dpi=150)
+    except PDFInfoNotInstalledError:
+        print("error: poppler is not available (pdftoppm/pdfinfo missing).", file=sys.stderr)
+        print(file=sys.stderr)
+        print(SYSTEM_DEPS_HELP, file=sys.stderr)
+        sys.exit(1)
 
     c = None
     for i, img in enumerate(images):
@@ -99,7 +188,16 @@ def main():
         c.drawImage(ImageReader(buf), 0, 0, width=page_w, height=page_h)
 
         # OCR overlay (invisible white text)
-        data = pytesseract.image_to_data(proc_img, output_type=pytesseract.Output.DICT)
+        try:
+            data = pytesseract.image_to_data(
+                proc_img, output_type=pytesseract.Output.DICT
+            )
+        except pytesseract.TesseractNotFoundError:
+            print("error: tesseract is not installed or not on PATH.", file=sys.stderr)
+            print(file=sys.stderr)
+            print(SYSTEM_DEPS_HELP, file=sys.stderr)
+            sys.exit(1)
+
         for j in range(len(data["text"])):
             if int(data["conf"][j]) > 50 and data["text"][j].strip():
                 x = data["left"][j] * scale

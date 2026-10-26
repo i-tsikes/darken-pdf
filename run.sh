@@ -1,2 +1,5 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")"
 uv sync
-uv run darken-pdf.py $1 $2 $3 $4 $5 $6 $7 $8
+exec uv run -- darken-pdf.py "$@"
