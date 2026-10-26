@@ -32,10 +32,14 @@ If tesseract is installed but not on your shell `PATH` (common with Homebrew in 
 Darkens text in a PDF and adds an invisible OCR text layer.
 
 ```bash
-uv run -- darken-pdf.py input.pdf
-uv run -- darken-pdf.py input.pdf -o /tmp/out.pdf -d 87
-./run.sh input.pdf -o out.pdf -d 100
+# After `uv sync` once, any of these work (./ uses uv via the shebang):
+./darken-pdf.py input.pdf
+./darken-pdf.py input.pdf -o /tmp/out.pdf -d 87
+uv run -- darken-pdf.py input.pdf -o out.pdf -d 100
+./run.sh input.pdf -o out.pdf
 ```
+
+Do not run it as `python3 darken-pdf.py` — that uses the system interpreter and skips the uv virtualenv (you'll get `ModuleNotFoundError: pdf2image`).
 
 - First argument: input PDF
 - `-o`: output path (default: `<stem>-darker.pdf` in the current directory)
