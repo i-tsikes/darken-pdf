@@ -41,4 +41,7 @@ Do not run it as `python3 darken-pdf.py` — that uses the system interpreter an
 
 - First argument: input PDF
 - `-o`: output path (default: `<stem>-darker.pdf` in the current directory)
-- `-d`: text darkening percent `0`–`100` (default: 100% black)
+- `-d`: darkening strength `0`–`100` (default: `100`)
+- `--dpi`: rasterization DPI (default: `200`; raise for finer equations)
+
+Darkening is stroke-aware: faint equation strokes on white paper are pulled toward black, while smooth shaded figure regions are mostly preserved (instead of a hard threshold that crushed figures and skipped light math).
