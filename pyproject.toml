@@ -1,7 +1,7 @@
 [project]
-name = "python-utils"
+name = "darken-pdf"
 version = "0.1.0"
-description = "Add your description here"
+description = "Darken text in a PDF and add an invisible OCR text layer"
 readme = "README.md"
 authors = [
     { name = "Terry Sikes", email = "terry.l.sikes@gmail.com" }
@@ -15,9 +15,5 @@ dependencies = [
     "reportlab>=5.1.0",
 ]
 
-[project.scripts]
-python-utils = "python_utils:main"
-
-[build-system]
-requires = ["uv_build>=0.13.5,<0.14.0"]
-build-backend = "uv_build"
+[tool.uv]
+package = false

@@ -1,6 +1,6 @@
-# python-utils
+# darken-pdf
 
-Small Python utilities. Managed with [uv](https://docs.astral.sh/uv/).
+Darkens text in a PDF and adds an invisible OCR text layer. Managed with [uv](https://docs.astral.sh/uv/).
 
 ## Setup
 
@@ -10,7 +10,7 @@ uv sync
 
 ### System dependencies
 
-`darken-pdf.py` needs native tools that **uv does not install**:
+Native tools that **uv does not install**:
 
 | Tool | Used for | Homebrew | apt |
 |------|----------|----------|-----|
@@ -27,9 +27,7 @@ sudo apt-get install -y tesseract-ocr poppler-utils
 
 If tesseract is installed but not on your shell `PATH` (common with Homebrew in some IDEs), the script also looks in `/opt/homebrew/bin` and `/usr/local/bin`.
 
-## darken-pdf
-
-Darkens text in a PDF and adds an invisible OCR text layer.
+## Usage
 
 ```bash
 # After `uv sync` once, any of these work (./ uses uv via the shebang):
